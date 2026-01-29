@@ -1,14 +1,14 @@
-# api/latency.py
+# api/index.py
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import json
-import numpy as np
 import os
+import numpy as np
 
 app = FastAPI()
 
-# Enable CORS for any origin (so dashboards can call this endpoint)
+# Enable CORS for any origin
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,12 +16,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load telemetry data once at startup
+# Load telemetry JSON once at startup
 DATA_FILE = os.path.join(os.path.dirname(__file__), "../q-vercel-latency.json")
 with open(DATA_FILE) as f:
     telemetry = json.load(f)
 
-@app.post("/latency")
+@app.post("/latency")  # this is the endpoint path
 async def latency_metrics(req: Request):
     """
     Expects POST JSON: {"regions": [...], "threshold_ms": 180}
@@ -33,11 +33,10 @@ async def latency_metrics(req: Request):
 
     result = {}
     for region in regions:
-        # Filter records for the region
+        # Filter records by region
         records = [r for r in telemetry if r.get("region") == region]
 
         if not records:
-            # If no data for region, return nulls/0
             result[region] = {
                 "avg_latency": None,
                 "p95_latency": None,
@@ -47,7 +46,7 @@ async def latency_metrics(req: Request):
             continue
 
         latencies = [r.get("latency_ms", 0) for r in records]
-        uptimes = [r.get("uptime", 0) for r in records]
+        uptimes = [r.get("uptime_pct", 0) for r in records]
         breaches = sum(1 for l in latencies if l > threshold)
 
         result[region] = {
