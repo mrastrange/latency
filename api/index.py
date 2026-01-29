@@ -1,4 +1,3 @@
-# api/index.py
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,24 +15,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load telemetry JSON once at startup
+# Load telemetry JSON once
 DATA_FILE = os.path.join(os.path.dirname(__file__), "../q-vercel-latency.json")
 with open(DATA_FILE) as f:
     telemetry = json.load(f)
 
-@app.post("/latency")  # this is the endpoint path
+@app.post("/api/latency")  # full path exposed by Vercel
 async def latency_metrics(req: Request):
-    """
-    Expects POST JSON: {"regions": [...], "threshold_ms": 180}
-    Returns per-region metrics: avg_latency, p95_latency, avg_uptime, breaches
-    """
     data = await req.json()
     regions = data.get("regions", [])
     threshold = data.get("threshold_ms", 180)
 
     result = {}
     for region in regions:
-        # Filter records by region
         records = [r for r in telemetry if r.get("region") == region]
 
         if not records:
