@@ -1,13 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import json
-import os
-import numpy as np
+import json, os, numpy as np
 
 app = FastAPI()
 
-# Enable CORS for any origin
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,12 +13,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load telemetry JSON once
 DATA_FILE = os.path.join(os.path.dirname(__file__), "../q-vercel-latency.json")
 with open(DATA_FILE) as f:
     telemetry = json.load(f)
 
-@app.post("/api/latency")  # full path exposed by Vercel
+@app.post("/latency")
 async def latency_metrics(req: Request):
     data = await req.json()
     regions = data.get("regions", [])
@@ -31,12 +28,7 @@ async def latency_metrics(req: Request):
         records = [r for r in telemetry if r.get("region") == region]
 
         if not records:
-            result[region] = {
-                "avg_latency": None,
-                "p95_latency": None,
-                "avg_uptime": None,
-                "breaches": 0,
-            }
+            result[region] = {"avg_latency": None, "p95_latency": None, "avg_uptime": None, "breaches": 0}
             continue
 
         latencies = [r.get("latency_ms", 0) for r in records]
